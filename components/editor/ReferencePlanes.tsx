@@ -289,8 +289,8 @@ function SketchElementPlane({
   const width = element.width ?? 1;
   const height = element.height ?? 1;
   const strokes = element.strokes ?? [];
-  const sketchWidth = Math.max(width * CANVAS_TO_WORLD_SCALE * scale, 0.05);
-  const sketchHeight = Math.max(height * CANVAS_TO_WORLD_SCALE * scale, 0.05);
+  const sketchWidth = Math.max(width * CANVAS_TO_WORLD_SCALE, 0.05);
+  const sketchHeight = Math.max(height * CANVAS_TO_WORLD_SCALE, 0.05);
 
   useEffect(() => {
     if (isSelected || isTransforming || !groupRef.current) return;

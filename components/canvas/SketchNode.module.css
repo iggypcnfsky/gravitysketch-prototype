@@ -3,10 +3,9 @@
 }
 
 .transformWrap {
-  height: calc(var(--sketch-height) * var(--sketch-scale));
-  transform: rotate(var(--sketch-rotation));
+  display: inline-block;
+  transform: rotate(var(--sketch-rotation)) scale(var(--sketch-scale));
   transform-origin: center center;
-  width: calc(var(--sketch-width) * var(--sketch-scale));
 }
 
 .sketchWrap {

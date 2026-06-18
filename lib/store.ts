@@ -65,7 +65,7 @@ function withCanvasElementPositions(nodes: Node[]): Node[] {
 
       return {
         ...node,
-        data: { scale: 1, rotation: 0, ...data, position3d },
+        data: { ...data, position3d },
       };
     }
 
@@ -398,8 +398,6 @@ export function updateCanvasElementFromCanvas(
         ...node,
         position: canvasPosition,
         data: {
-          scale: 1,
-          rotation: 0,
           ...data,
           ...patch,
           position3d,

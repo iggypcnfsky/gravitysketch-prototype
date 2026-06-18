@@ -10,8 +10,28 @@ import { bakeReferenceGroupTransform } from "@/lib/store";
 import styles from "./ReferencePlanes.module.css";
 
 const PERSPECTIVE_DISTANCE_FACTOR = 7;
-/** Matches drei Html scale in perspective (~1.6) at orthographic zoom 1. */
-const ORTHO_TARGET_SCALE = 1.65;
+const DEFAULT_FOV_DEG = 45;
+
+function getMatchingDistanceFactor(
+  camera: THREE.Camera,
+  worldPosition: THREE.Vector3,
+  perspectiveDistanceFactor: number,
+) {
+  const cameraPosition = new THREE.Vector3();
+  camera.getWorldPosition(cameraPosition);
+  const distance = Math.max(worldPosition.distanceTo(cameraPosition), 0.001);
+  const vFov = THREE.MathUtils.degToRad(
+    camera instanceof THREE.PerspectiveCamera ? camera.fov : DEFAULT_FOV_DEG,
+  );
+  const targetScreenScale =
+    perspectiveDistanceFactor / (2 * Math.tan(vFov / 2) * distance);
+
+  if (camera instanceof THREE.OrthographicCamera) {
+    return targetScreenScale / Math.max(camera.zoom, 0.001);
+  }
+
+  return perspectiveDistanceFactor;
+}
 
 interface CanvasGroupMoveHandleProps {
   frameHeight: number;
@@ -30,6 +50,11 @@ export function CanvasGroupMoveHandle({
 }: CanvasGroupMoveHandleProps) {
   const { camera, gl, controls } = useThree();
   const [distanceFactor, setDistanceFactor] = useState(PERSPECTIVE_DISTANCE_FACTOR);
+  const handleLocalPosition = useMemo(
+    () => new THREE.Vector3(0, frameHeight / 2 + 0.16, 0.05),
+    [frameHeight],
+  );
+  const handleWorldPosition = useMemo(() => new THREE.Vector3(), []);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const mouse = useMemo(() => new THREE.Vector2(), []);
   const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), -planeZ), [planeZ]);
@@ -37,13 +62,19 @@ export function CanvasGroupMoveHandle({
   const dragOffset = useRef(new THREE.Vector3());
 
   useFrame(() => {
-    if (camera instanceof THREE.OrthographicCamera) {
-      const next = ORTHO_TARGET_SCALE / Math.max(camera.zoom, 0.001);
-      setDistanceFactor((prev) => (Math.abs(prev - next) > 0.001 ? next : prev));
-      return;
-    }
+    const group = groupRef.current;
+    if (!group) return;
 
-    setDistanceFactor((prev) => (prev === PERSPECTIVE_DISTANCE_FACTOR ? prev : PERSPECTIVE_DISTANCE_FACTOR));
+    handleWorldPosition.copy(handleLocalPosition);
+    handleWorldPosition.applyMatrix4(group.matrixWorld);
+
+    const next = getMatchingDistanceFactor(
+      camera,
+      handleWorldPosition,
+      PERSPECTIVE_DISTANCE_FACTOR,
+    );
+
+    setDistanceFactor((prev) => (Math.abs(prev - next) > 0.001 ? next : prev));
   });
 
   const getPlaneHit = useCallback(

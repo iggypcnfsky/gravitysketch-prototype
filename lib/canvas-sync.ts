@@ -39,6 +39,12 @@ export type CanvasElementData = ImageReferenceData | CanvasTextData | CanvasSket
 
 export const DEFAULT_SKETCH_STROKE_COLOR = "#7B3FF2";
 export const DEFAULT_SKETCH_STROKE_WIDTH = 2.5;
+export const MIN_SKETCH_STROKE_WIDTH = 1;
+export const MAX_SKETCH_STROKE_WIDTH = 12;
+export const SKETCH_STROKE_WIDTH_STEP = 0.5;
+export const MIN_ELEMENT_SCALE = 0.35;
+export const MAX_ELEMENT_SCALE = 4;
+export const ELEMENT_SCALE_STEP = 0.1;
 export const SKETCH_BOUNDS_PADDING = 8;
 export const SKETCH_ERASER_RADIUS = 12;
 

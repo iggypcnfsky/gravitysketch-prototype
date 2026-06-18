@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useReactFlow, type Viewport } from "@xyflow/react";
 import {
   DEFAULT_SKETCH_STROKE_COLOR,
-  DEFAULT_SKETCH_STROKE_WIDTH,
   pointsToPath,
   SKETCH_ERASER_RADIUS,
   type SketchStroke,
@@ -59,6 +58,7 @@ function eraseStrokesAt(strokes: SketchStroke[], x: number, y: number, radius: n
 interface SketchDrawingOverlayProps {
   mode: "draw" | "erase";
   sessionStrokes: SketchStroke[];
+  strokeWidth: number;
   viewport: Viewport;
   onSessionStrokesChange: (strokes: SketchStroke[]) => void;
 }
@@ -66,6 +66,7 @@ interface SketchDrawingOverlayProps {
 export function SketchDrawingOverlay({
   mode,
   sessionStrokes,
+  strokeWidth,
   viewport,
   onSessionStrokesChange,
 }: SketchDrawingOverlayProps) {
@@ -73,10 +74,37 @@ export function SketchDrawingOverlay({
   const overlayRef = useRef<HTMLDivElement>(null);
   const activeStrokeRef = useRef<SketchStroke | null>(null);
   const sessionStrokesRef = useRef(sessionStrokes);
+  const strokeWidthRef = useRef(strokeWidth);
   const [activeStroke, setActiveStroke] = useState<SketchStroke | null>(null);
   const isErasingRef = useRef(false);
 
   sessionStrokesRef.current = sessionStrokes;
+  strokeWidthRef.current = strokeWidth;
+
+  useEffect(() => {
+    const element = overlayRef.current;
+    if (!element) return;
+
+    const blockTouch = (event: TouchEvent) => {
+      if (event.cancelable) event.preventDefault();
+    };
+
+    const blockSelection = (event: Event) => {
+      event.preventDefault();
+    };
+
+    element.addEventListener("touchstart", blockTouch, { passive: false });
+    element.addEventListener("touchmove", blockTouch, { passive: false });
+    element.addEventListener("selectstart", blockSelection);
+    element.addEventListener("contextmenu", blockSelection);
+
+    return () => {
+      element.removeEventListener("touchstart", blockTouch);
+      element.removeEventListener("touchmove", blockTouch);
+      element.removeEventListener("selectstart", blockSelection);
+      element.removeEventListener("contextmenu", blockSelection);
+    };
+  }, []);
 
   const toFlowPosition = useCallback(
     (clientX: number, clientY: number) =>
@@ -109,7 +137,7 @@ export function SketchDrawingOverlay({
         id: `stroke-${Date.now()}`,
         points: [flowPoint.x, flowPoint.y],
         color: DEFAULT_SKETCH_STROKE_COLOR,
-        strokeWidth: DEFAULT_SKETCH_STROKE_WIDTH,
+        strokeWidth: strokeWidthRef.current,
       };
       activeStrokeRef.current = stroke;
       setActiveStroke(stroke);
@@ -182,6 +210,11 @@ export function SketchDrawingOverlay({
 
   const previewStrokes = activeStroke ? [...sessionStrokes, activeStroke] : sessionStrokes;
 
+  const blockGesture = useCallback((event: React.SyntheticEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
   return (
     <div
       ref={overlayRef}
@@ -190,6 +223,8 @@ export function SketchDrawingOverlay({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
+      onContextMenu={blockGesture}
+      onDragStart={blockGesture}
     >
       <svg
         className={styles.svgLayer}

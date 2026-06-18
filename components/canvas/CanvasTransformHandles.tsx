@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import styles from "./CanvasTransformHandles.module.css";
+import { MAX_ELEMENT_SCALE, MIN_ELEMENT_SCALE } from "@/lib/canvas-sync";
 
 function getAngle(clientX: number, clientY: number, centerX: number, centerY: number) {
   return (Math.atan2(clientY - centerY, clientX - centerX) * 180) / Math.PI;
@@ -64,7 +65,10 @@ export function CanvasTransformHandles({
 
       const onMove = (moveEvent: PointerEvent) => {
         const distance = Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY);
-        const nextScale = Math.min(4, Math.max(0.35, startScale * (distance / startDistance)));
+        const nextScale = Math.min(
+          MAX_ELEMENT_SCALE,
+          Math.max(MIN_ELEMENT_SCALE, startScale * (distance / startDistance)),
+        );
         onChange({ scale: Number(nextScale.toFixed(2)) });
       };
 
