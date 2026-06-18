@@ -73,6 +73,10 @@ function withCanvasElementPositions(nodes: Node[]): Node[] {
   });
 }
 
+function withoutLegacyBoatSketch(nodes: Node[]): Node[] {
+  return nodes.filter((node) => node.type !== "boatSketch");
+}
+
 function migrateState(state: AppState): AppState {
   const seedCanvas = SEED_STATE.canvases[0];
 
@@ -86,7 +90,7 @@ function migrateState(state: AppState): AppState {
       ...migrated,
       type: "canvas" as const,
       updatedAt: migrated.updatedAt ?? "just now",
-      nodes: withCanvasElementPositions(migrated.nodes),
+      nodes: withCanvasElementPositions(withoutLegacyBoatSketch(migrated.nodes)),
     };
   });
 
@@ -103,7 +107,9 @@ function migrateState(state: AppState): AppState {
     if (canvas.id !== seedCanvas.id) return canvas;
 
     const hasImageNodes = canvas.nodes.some((node) => node.type === "imagePlaceholder");
-    const nodes = hasImageNodes ? canvas.nodes : withCanvasElementPositions(seedCanvas.nodes);
+    const nodes = withoutLegacyBoatSketch(
+      hasImageNodes ? canvas.nodes : withCanvasElementPositions(seedCanvas.nodes),
+    );
 
     return {
       ...canvas,

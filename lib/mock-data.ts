@@ -30,14 +30,6 @@ export const SEED_STATE: AppState = {
       linkedRoomId: "sailing-boat",
       nodes: [
         {
-          id: "boat-sketch",
-          type: "boatSketch",
-          position: { x: 377, y: 247 },
-          data: {},
-          draggable: true,
-          selectable: true,
-        },
-        {
           id: "image-ref-1",
           type: "imagePlaceholder",
           position: { x: 80, y: 120 },
