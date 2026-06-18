@@ -3,7 +3,9 @@
   display: flex;
   flex-direction: column;
   font-synthesis: none;
-  height: 100vh;
+  height: var(--gs-app-height);
+  max-height: var(--gs-app-height);
+  min-height: 0;
   overflow: hidden;
   width: 100%;
 }

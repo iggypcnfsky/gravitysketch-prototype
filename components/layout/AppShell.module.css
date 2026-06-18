@@ -2,8 +2,9 @@
   --sidebar-edge: var(--gs-sidebar-width);
   background-color: var(--gs-page-bg);
   display: flex;
-  height: 100vh;
-  min-height: 900px;
+  height: var(--gs-app-height);
+  max-height: var(--gs-app-height);
+  min-height: 0;
   overflow: hidden;
   position: relative;
 }

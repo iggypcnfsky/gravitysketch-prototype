@@ -36,4 +36,11 @@
   --gs-radius-pill: 999px;
   --gs-sidebar-width: 240px;
   --gs-font: var(--font-inter), "Inter", system-ui, sans-serif;
+  --gs-app-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --gs-app-height: 100dvh;
+  }
 }

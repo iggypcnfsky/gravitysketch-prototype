@@ -8,9 +8,13 @@
   padding: 0;
 }
 
+html {
+  touch-action: manipulation;
+}
+
 html,
 body {
-  height: 100%;
+  height: var(--gs-app-height);
   overflow: hidden;
 }
 
@@ -21,6 +25,7 @@ body {
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 a {
