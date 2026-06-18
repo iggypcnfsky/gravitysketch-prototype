@@ -1,37 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Html } from "@react-three/drei";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Move } from "lucide-react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { bakeReferenceGroupTransform } from "@/lib/store";
 import styles from "./ReferencePlanes.module.css";
-
-const PERSPECTIVE_DISTANCE_FACTOR = 7;
-const DEFAULT_FOV_DEG = 45;
-
-function getMatchingDistanceFactor(
-  camera: THREE.Camera,
-  worldPosition: THREE.Vector3,
-  perspectiveDistanceFactor: number,
-) {
-  const cameraPosition = new THREE.Vector3();
-  camera.getWorldPosition(cameraPosition);
-  const distance = Math.max(worldPosition.distanceTo(cameraPosition), 0.001);
-  const vFov = THREE.MathUtils.degToRad(
-    camera instanceof THREE.PerspectiveCamera ? camera.fov : DEFAULT_FOV_DEG,
-  );
-  const targetScreenScale =
-    perspectiveDistanceFactor / (2 * Math.tan(vFov / 2) * distance);
-
-  if (camera instanceof THREE.OrthographicCamera) {
-    return targetScreenScale / Math.max(camera.zoom, 0.001);
-  }
-
-  return perspectiveDistanceFactor;
-}
 
 interface CanvasGroupMoveHandleProps {
   frameHeight: number;
@@ -49,32 +25,44 @@ export function CanvasGroupMoveHandle({
   transformingRef,
 }: CanvasGroupMoveHandleProps) {
   const { camera, gl, controls } = useThree();
-  const [distanceFactor, setDistanceFactor] = useState(PERSPECTIVE_DISTANCE_FACTOR);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const handleLocalPosition = useMemo(
     () => new THREE.Vector3(0, frameHeight / 2 + 0.16, 0.05),
     [frameHeight],
   );
-  const handleWorldPosition = useMemo(() => new THREE.Vector3(), []);
+  const worldPosition = useMemo(() => new THREE.Vector3(), []);
+  const projected = useMemo(() => new THREE.Vector3(), []);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const mouse = useMemo(() => new THREE.Vector2(), []);
   const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), -planeZ), [planeZ]);
   const intersection = useRef(new THREE.Vector3());
   const dragOffset = useRef(new THREE.Vector3());
 
+  useEffect(() => {
+    setPortalTarget(gl.domElement.parentElement ?? document.body);
+  }, [gl]);
+
   useFrame(() => {
+    const button = buttonRef.current;
     const group = groupRef.current;
-    if (!group) return;
+    if (!button || !group) {
+      if (button) button.style.display = "none";
+      return;
+    }
 
-    handleWorldPosition.copy(handleLocalPosition);
-    handleWorldPosition.applyMatrix4(group.matrixWorld);
+    worldPosition.copy(handleLocalPosition);
+    worldPosition.applyMatrix4(group.matrixWorld);
+    projected.copy(worldPosition).project(camera);
 
-    const next = getMatchingDistanceFactor(
-      camera,
-      handleWorldPosition,
-      PERSPECTIVE_DISTANCE_FACTOR,
-    );
+    const rect = gl.domElement.getBoundingClientRect();
+    const x = rect.left + (projected.x * 0.5 + 0.5) * rect.width;
+    const y = rect.top + (-projected.y * 0.5 + 0.5) * rect.height;
+    const visible = projected.z < 1;
 
-    setDistanceFactor((prev) => (Math.abs(prev - next) > 0.001 ? next : prev));
+    button.style.display = visible ? "flex" : "none";
+    button.style.left = `${x}px`;
+    button.style.top = `${y}px`;
   });
 
   const getPlaneHit = useCallback(
@@ -133,24 +121,27 @@ export function CanvasGroupMoveHandle({
     [controls, getPlaneHit, groupRef, roomId, transformingRef],
   );
 
-  return (
-    <Html
-      position={[0, frameHeight / 2 + 0.16, 0.05]}
-      center
-      distanceFactor={distanceFactor}
-      zIndexRange={[120, 0]}
-      style={{ pointerEvents: "none" }}
+  if (!portalTarget) return null;
+
+  return createPortal(
+    <button
+      ref={buttonRef}
+      type="button"
+      className={styles.moveHandle}
+      style={{
+        display: "none",
+        left: 0,
+        position: "fixed",
+        top: 0,
+        transform: "translate(-50%, -50%)",
+        zIndex: 120,
+      }}
+      onPointerDown={handlePointerDown}
+      aria-label="Drag to move canvas"
     >
-      <button
-        type="button"
-        className={styles.moveHandle}
-        style={{ pointerEvents: "auto" }}
-        onPointerDown={handlePointerDown}
-        aria-label="Drag to move canvas"
-      >
-        <Move size={14} strokeWidth={2} />
-        <span className={styles.moveHandleLabel}>Move canvas</span>
-      </button>
-    </Html>
+      <Move size={14} strokeWidth={2} />
+      <span className={styles.moveHandleLabel}>Move canvas</span>
+    </button>,
+    portalTarget,
   );
 }
