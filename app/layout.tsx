@@ -11,6 +11,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Gravity Sketch",
   description: "Gravity Sketch web app prototype",
+  icons: {
+    icon: "/logomark.png",
+    apple: "/logomark.png",
+  },
 };
 
 export const viewport: Viewport = {

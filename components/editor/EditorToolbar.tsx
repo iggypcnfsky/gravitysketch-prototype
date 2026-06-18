@@ -35,7 +35,7 @@ export function EditorToolbar({
         <div className={styles.logoGroup}>
           <Link href="/files" className={styles.logoBtn}>
             <Image
-              src="https://gravitysketch.com/wp-content/uploads/2024/08/logomark.png"
+              src="/logomark.png"
               alt="Gravity Sketch"
               width={28}
               height={28}

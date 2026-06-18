@@ -47,7 +47,7 @@ export function Sidebar({ activeNav, collapsed }: SidebarProps) {
           <Image
             src={
               collapsed
-                ? "https://gravitysketch.com/wp-content/uploads/2024/08/logomark.png"
+                ? "/logomark.png"
                 : "/gravity-sketch-logo.svg"
             }
             alt="Gravity Sketch"
