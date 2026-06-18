@@ -26,6 +26,22 @@ function getElementHalfExtents(element: CanvasElementReference) {
     };
   }
 
+  if (element.kind === "sketch") {
+    const scale = element.scale ?? 1;
+    const width = (element.width ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
+    const height = (element.height ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
+    const rotation = ((element.rotation ?? 0) * Math.PI) / 180;
+
+    return {
+      halfWidth:
+        (Math.abs(Math.cos(rotation)) * width) / 2 +
+        (Math.abs(Math.sin(rotation)) * height) / 2,
+      halfHeight:
+        (Math.abs(Math.sin(rotation)) * width) / 2 +
+        (Math.abs(Math.cos(rotation)) * height) / 2,
+    };
+  }
+
   const textSize = getTextNodeSize({
     text: element.text,
     fontSize: element.fontSize,

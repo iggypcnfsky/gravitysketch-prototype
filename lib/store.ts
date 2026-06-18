@@ -11,6 +11,7 @@ import {
   type CanvasTextData,
   type ImageReferenceData,
   type Position3D,
+  type CanvasSketchData,
 } from "./canvas-sync";
 import type { Node } from "@xyflow/react";
 import * as THREE from "three";
@@ -50,6 +51,21 @@ function withCanvasElementPositions(nodes: Node[]): Node[] {
       return {
         ...node,
         data: { ...data, position3d },
+      };
+    }
+
+    if (node.type === "canvasSketch") {
+      const data = (node.data ?? {}) as CanvasSketchData;
+      const position3d = nodePositionTo3D(
+        node.type,
+        node.position,
+        data,
+        data.position3d?.z ?? DEFAULT_REFERENCE_Z,
+      );
+
+      return {
+        ...node,
+        data: { scale: 1, rotation: 0, ...data, position3d },
       };
     }
 
@@ -254,7 +270,12 @@ export function getCanvasElementsForRoom(roomId: string): CanvasElementReference
   if (!canvas) return [];
 
   return canvas.nodes
-    .filter((node) => node.type === "imagePlaceholder" || node.type === "canvasText")
+    .filter(
+      (node) =>
+        node.type === "imagePlaceholder" ||
+        node.type === "canvasText" ||
+        node.type === "canvasSketch",
+    )
     .map((node) => {
       if (node.type === "canvasText") {
         const data = (node.data ?? {}) as CanvasTextData;
@@ -264,6 +285,24 @@ export function getCanvasElementsForRoom(roomId: string): CanvasElementReference
           kind: "text" as const,
           text: data.text ?? "Text",
           fontSize: data.fontSize ?? 28,
+          scale: data.scale ?? 1,
+          rotation: data.rotation ?? 0,
+          position3d:
+            data.position3d ??
+            nodePositionTo3D(node.type, node.position, data),
+          canvasPosition: { x: node.position.x, y: node.position.y },
+        };
+      }
+
+      if (node.type === "canvasSketch") {
+        const data = (node.data ?? {}) as CanvasSketchData;
+
+        return {
+          id: node.id,
+          kind: "sketch" as const,
+          width: data.width,
+          height: data.height,
+          strokes: data.strokes ?? [],
           scale: data.scale ?? 1,
           rotation: data.rotation ?? 0,
           position3d:
@@ -308,6 +347,9 @@ export interface CanvasElementCanvasPatch {
   fontSize?: number;
   scale?: number;
   rotation?: number;
+  width?: number;
+  height?: number;
+  strokes?: CanvasSketchData["strokes"];
 }
 
 export function updateCanvasElementFromCanvas(
@@ -322,7 +364,9 @@ export function updateCanvasElementFromCanvas(
   if (!existingNode) return;
 
   const canvasPosition = patch.position ?? existingNode.position;
-  const existingData = (existingNode.data ?? {}) as ImageReferenceData & CanvasTextData;
+  const existingData = (existingNode.data ?? {}) as ImageReferenceData &
+    CanvasTextData &
+    CanvasSketchData;
   const mergedData = { ...existingData, ...patch };
   const planeZ = existingData.position3d?.z;
   const position3d = nodePositionTo3D(
@@ -341,6 +385,21 @@ export function updateCanvasElementFromCanvas(
         ...node,
         position: canvasPosition,
         data: {
+          ...data,
+          ...patch,
+          position3d,
+        },
+      };
+    }
+
+    if (node.type === "canvasSketch") {
+      const data = (node.data ?? {}) as CanvasSketchData;
+      return {
+        ...node,
+        position: canvasPosition,
+        data: {
+          scale: 1,
+          rotation: 0,
           ...data,
           ...patch,
           position3d,
@@ -392,6 +451,23 @@ export function updateCanvasElementFrom3D(
 
     if (node.type === "canvasText") {
       const data = (node.data ?? {}) as CanvasTextData;
+      const mergedData = {
+        ...data,
+        ...(patch.rotation !== undefined ? { rotation: patch.rotation } : {}),
+        ...(patch.scale !== undefined ? { scale: patch.scale } : {}),
+      };
+      return {
+        ...node,
+        position: world3DToNodePosition(patch.position3d, node.type, mergedData),
+        data: {
+          ...mergedData,
+          position3d: patch.position3d,
+        },
+      };
+    }
+
+    if (node.type === "canvasSketch") {
+      const data = (node.data ?? {}) as CanvasSketchData;
       const mergedData = {
         ...data,
         ...(patch.rotation !== undefined ? { rotation: patch.rotation } : {}),

@@ -1,0 +1,22 @@
+.overlay {
+  inset: 0;
+  position: absolute;
+  touch-action: none;
+  z-index: 5;
+}
+
+.overlayDraw {
+  cursor: crosshair;
+}
+
+.overlayErase {
+  cursor: cell;
+}
+
+.svgLayer {
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+}

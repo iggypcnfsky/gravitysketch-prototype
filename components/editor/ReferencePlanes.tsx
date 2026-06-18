@@ -39,6 +39,22 @@ function getElementHalfExtents(element: CanvasElementReference) {
     };
   }
 
+  if (element.kind === "sketch") {
+    const scale = element.scale ?? 1;
+    const width = (element.width ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
+    const height = (element.height ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
+    const rotation = ((element.rotation ?? 0) * Math.PI) / 180;
+
+    return {
+      halfWidth:
+        (Math.abs(Math.cos(rotation)) * width) / 2 +
+        (Math.abs(Math.sin(rotation)) * height) / 2,
+      halfHeight:
+        (Math.abs(Math.sin(rotation)) * width) / 2 +
+        (Math.abs(Math.cos(rotation)) * height) / 2,
+    };
+  }
+
   const fontSize =
     (element.fontSize ?? DEFAULT_TEXT_FONT_SIZE) *
     (element.scale ?? 1) *
@@ -234,6 +250,119 @@ function TextElementPlane({
   );
 }
 
+function localSketchPointToGroup(
+  localX: number,
+  localY: number,
+  width: number,
+  height: number,
+) {
+  return new THREE.Vector3(
+    (localX - width / 2) * CANVAS_TO_WORLD_SCALE,
+    (height / 2 - localY) * CANVAS_TO_WORLD_SCALE,
+    0.01,
+  );
+}
+
+function SketchElementPlane({
+  element,
+  groupCenter,
+  isSelected,
+  isTransforming,
+  onSelect,
+  onSelectGroup,
+}: CanvasElementPlaneProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const relativePosition = useMemo(
+    () =>
+      new THREE.Vector3(
+        element.position3d.x - groupCenter.x,
+        element.position3d.y - groupCenter.y,
+        0,
+      ),
+    [groupCenter, element.position3d],
+  );
+  const rotationZ = useMemo(
+    () => THREE.MathUtils.degToRad(element.rotation ?? 0),
+    [element.rotation],
+  );
+  const scale = element.scale ?? 1;
+  const width = element.width ?? 1;
+  const height = element.height ?? 1;
+  const strokes = element.strokes ?? [];
+  const sketchWidth = Math.max(width * CANVAS_TO_WORLD_SCALE * scale, 0.05);
+  const sketchHeight = Math.max(height * CANVAS_TO_WORLD_SCALE * scale, 0.05);
+
+  useEffect(() => {
+    if (isSelected || isTransforming || !groupRef.current) return;
+    groupRef.current.position.copy(relativePosition);
+    groupRef.current.rotation.set(0, 0, rotationZ);
+    groupRef.current.scale.set(scale, scale, 1);
+  }, [isSelected, isTransforming, relativePosition, rotationZ, scale]);
+
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    if (!groupRef.current) return;
+    if (event.shiftKey || event.metaKey || event.ctrlKey) {
+      onSelectGroup();
+      return;
+    }
+    onSelect({ id: element.id, kind: "reference", object: groupRef.current });
+  };
+
+  return (
+    <group
+      ref={groupRef}
+      position={relativePosition}
+      rotation={[0, 0, rotationZ]}
+      scale={[scale, scale, 1]}
+      userData={{ elementId: element.id, referenceId: element.id }}
+    >
+      {isSelected ? (
+        <mesh position={[0, 0, -0.004]} raycast={() => null}>
+          <planeGeometry args={[sketchWidth * 1.08, sketchHeight * 1.08]} />
+          <meshBasicMaterial color="#7B3FF2" transparent opacity={0.18} />
+        </mesh>
+      ) : null}
+
+      <mesh
+        position={[0, 0, 0]}
+        onPointerDown={handlePointerDown}
+      >
+        <planeGeometry args={[sketchWidth, sketchHeight]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+
+      {strokes.map((stroke) => {
+        const points: THREE.Vector3[] = [];
+        for (let i = 0; i < stroke.points.length; i += 2) {
+          points.push(
+            localSketchPointToGroup(
+              stroke.points[i],
+              stroke.points[i + 1],
+              width,
+              height,
+            ),
+          );
+        }
+
+        if (points.length < 2) return null;
+
+        return (
+          <Line
+            key={stroke.id}
+            points={points}
+            color={stroke.color}
+            lineWidth={Math.max(stroke.strokeWidth * CANVAS_TO_WORLD_SCALE * 120, 1)}
+            transparent
+            opacity={1}
+            raycast={() => null}
+          />
+        );
+      })}
+    </group>
+  );
+}
+
 function useGroupBounds(elements: CanvasElementReference[]) {
   return useMemo(() => {
     if (elements.length === 0) return null;
@@ -409,18 +538,36 @@ export function ReferencePlanes({
       ) : null}
 
       {bounds
-        ? elements.map((element) =>
-            element.kind === "text" ? (
-              <TextElementPlane
-                key={element.id}
-                element={element}
-                groupCenter={bounds.center}
-                isSelected={selectedKind === "reference" && selectedId === element.id}
-                isTransforming={isTransforming}
-                onSelect={onSelect}
-                onSelectGroup={handleSelectGroup}
-              />
-            ) : (
+        ? elements.map((element) => {
+            if (element.kind === "text") {
+              return (
+                <TextElementPlane
+                  key={element.id}
+                  element={element}
+                  groupCenter={bounds.center}
+                  isSelected={selectedKind === "reference" && selectedId === element.id}
+                  isTransforming={isTransforming}
+                  onSelect={onSelect}
+                  onSelectGroup={handleSelectGroup}
+                />
+              );
+            }
+
+            if (element.kind === "sketch") {
+              return (
+                <SketchElementPlane
+                  key={element.id}
+                  element={element}
+                  groupCenter={bounds.center}
+                  isSelected={selectedKind === "reference" && selectedId === element.id}
+                  isTransforming={isTransforming}
+                  onSelect={onSelect}
+                  onSelectGroup={handleSelectGroup}
+                />
+              );
+            }
+
+            return (
               <ImageElementPlane
                 key={element.id}
                 element={element}
@@ -430,8 +577,8 @@ export function ReferencePlanes({
                 onSelect={onSelect}
                 onSelectGroup={handleSelectGroup}
               />
-            ),
-          )
+            );
+          })
         : null}
     </group>
   );

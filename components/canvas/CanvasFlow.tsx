@@ -14,14 +14,22 @@ import {
   type OnNodeDrag,
   type Viewport,
 } from "@xyflow/react";
-import { Plus, Type } from "lucide-react";
+import { Check, Eraser, Pencil, Plus, Type } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import { CANVAS_SYNC_EVENT } from "@/lib/canvas-sync";
-import { canvasTo3D, DEFAULT_TEXT_FONT_SIZE, nodePositionTo3D } from "@/lib/canvas-sync";
+import {
+  computeSketchBounds,
+  DEFAULT_TEXT_FONT_SIZE,
+  flowStrokesToLocal,
+  nodePositionTo3D,
+  type SketchStroke,
+} from "@/lib/canvas-sync";
 import { getCanvas, saveCanvas, updateCanvasElementFromCanvas } from "@/lib/store";
 import { BoatSketchNode } from "./BoatSketchNode";
 import { CanvasNodeContext } from "./CanvasNodeContext";
 import { ImagePlaceholderNode } from "./ImagePlaceholderNode";
+import { SketchDrawingOverlay } from "./SketchDrawingOverlay";
+import { SketchNode } from "./SketchNode";
 import { TextNode } from "./TextNode";
 import styles from "./CanvasFlow.module.css";
 
@@ -29,7 +37,10 @@ const nodeTypes = {
   boatSketch: BoatSketchNode,
   imagePlaceholder: ImagePlaceholderNode,
   canvasText: TextNode,
+  canvasSketch: SketchNode,
 };
+
+type SketchMode = "draw" | "erase";
 
 interface CanvasFlowInnerProps {
   canvasId: string;
@@ -46,6 +57,8 @@ function CanvasFlowInner({ canvasId, onExternalSync }: CanvasFlowInnerProps) {
   const [viewport, setViewport] = useState<Viewport>(
     initialCanvas?.viewport ?? { x: 0, y: 0, zoom: 1 },
   );
+  const [sketchMode, setSketchMode] = useState<SketchMode | null>(null);
+  const [sessionStrokes, setSessionStrokes] = useState<SketchStroke[]>([]);
   const { screenToFlowPosition, fitView } = useReactFlow();
   const framedCanvasRef = useRef<string | null>(null);
 
@@ -135,7 +148,13 @@ function CanvasFlowInner({ canvasId, onExternalSync }: CanvasFlowInnerProps) {
 
   const onNodeDragStop: OnNodeDrag<Node> = useCallback(
     (_event, node) => {
-      if (node.type !== "imagePlaceholder" && node.type !== "canvasText") return;
+      if (
+        node.type !== "imagePlaceholder" &&
+        node.type !== "canvasText" &&
+        node.type !== "canvasSketch"
+      ) {
+        return;
+      }
       updateCanvasElementFromCanvas(canvasId, node.id, { position: node.position });
     },
     [canvasId],
@@ -211,7 +230,63 @@ function CanvasFlowInner({ canvasId, onExternalSync }: CanvasFlowInnerProps) {
     });
   }, [addNodeAtCenter, canvasId]);
 
+  const handleStartSketch = useCallback(() => {
+    setSketchMode("draw");
+    setSessionStrokes([]);
+  }, []);
+
+  const handleFinalizeSketch = useCallback(() => {
+    if (sessionStrokes.length === 0) {
+      setSketchMode(null);
+      return;
+    }
+
+    const bounds = computeSketchBounds(sessionStrokes);
+    if (!bounds) {
+      setSketchMode(null);
+      setSessionStrokes([]);
+      return;
+    }
+
+    const id = `sketch-${Date.now()}`;
+    const localStrokes = flowStrokesToLocal(sessionStrokes, {
+      x: bounds.minX,
+      y: bounds.minY,
+    });
+    const sketchData = {
+      width: bounds.width,
+      height: bounds.height,
+      strokes: localStrokes,
+      scale: 1,
+      rotation: 0,
+    };
+    const position = { x: bounds.minX, y: bounds.minY };
+    const newNode: Node = {
+      id,
+      type: "canvasSketch",
+      position,
+      data: {
+        ...sketchData,
+        position3d: nodePositionTo3D("canvasSketch", position, sketchData),
+      },
+      draggable: true,
+      selectable: true,
+      selected: true,
+    };
+
+    setNodes((nds) => {
+      const nextNodes = [...nds.map((node) => ({ ...node, selected: false })), newNode];
+      const canvas = getCanvas(canvasId);
+      if (canvas) saveCanvas({ ...canvas, nodes: nextNodes }, true);
+      return nextNodes;
+    });
+
+    setSessionStrokes([]);
+    setSketchMode(null);
+  }, [canvasId, sessionStrokes]);
+
   const defaultViewport = useMemo(() => ({ x: 0, y: 0, zoom: 1 }), []);
+  const isSketching = sketchMode !== null;
 
   return (
     <CanvasNodeContext.Provider value={{ canvasId, syncElement }}>
@@ -228,29 +303,79 @@ function CanvasFlowInner({ canvasId, onExternalSync }: CanvasFlowInnerProps) {
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
           fitView={false}
-          elementsSelectable
+          elementsSelectable={!isSketching}
           selectNodesOnDrag={false}
+          nodesDraggable={!isSketching}
+          panOnDrag={!isSketching}
         >
           <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color="#B0B0B0" />
         </ReactFlow>
 
+        {isSketching ? (
+          <SketchDrawingOverlay
+            mode={sketchMode}
+            sessionStrokes={sessionStrokes}
+            viewport={viewport}
+            onSessionStrokesChange={setSessionStrokes}
+          />
+        ) : null}
+
         <div className={styles.addToolbar}>
-          <button
-            type="button"
-            className={styles.addBtn}
-            onClick={handleAddText}
-            aria-label="Add text to canvas"
-          >
-            <Type size={20} strokeWidth={2} color="#FFFFFF" />
-          </button>
-          <button
-            type="button"
-            className={styles.addBtn}
-            onClick={handleAddImage}
-            aria-label="Add image to canvas"
-          >
-            <Plus size={22} strokeWidth={2} color="#FFFFFF" />
-          </button>
+          {isSketching ? (
+            <div className={styles.sketchToolbar}>
+              <button
+                type="button"
+                className={`${styles.addBtn} ${sketchMode === "draw" ? styles.addBtnActive : ""}`}
+                onClick={() => setSketchMode("draw")}
+                aria-label="Draw on canvas"
+              >
+                <Pencil size={20} strokeWidth={2} color={sketchMode === "draw" ? "#7B3FF2" : "#FFFFFF"} />
+              </button>
+              <button
+                type="button"
+                className={`${styles.addBtn} ${sketchMode === "erase" ? styles.addBtnActive : ""}`}
+                onClick={() => setSketchMode("erase")}
+                aria-label="Erase sketch strokes"
+              >
+                <Eraser size={20} strokeWidth={2} color={sketchMode === "erase" ? "#7B3FF2" : "#FFFFFF"} />
+              </button>
+              <button
+                type="button"
+                className={styles.addBtn}
+                onClick={handleFinalizeSketch}
+                aria-label="Finish sketch"
+              >
+                <Check size={22} strokeWidth={2} color="#FFFFFF" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={styles.addBtn}
+                onClick={handleAddText}
+                aria-label="Add text to canvas"
+              >
+                <Type size={20} strokeWidth={2} color="#FFFFFF" />
+              </button>
+              <button
+                type="button"
+                className={styles.addBtn}
+                onClick={handleAddImage}
+                aria-label="Add image to canvas"
+              >
+                <Plus size={22} strokeWidth={2} color="#FFFFFF" />
+              </button>
+              <button
+                type="button"
+                className={styles.addBtn}
+                onClick={handleStartSketch}
+                aria-label="Add sketch to canvas"
+              >
+                <Pencil size={20} strokeWidth={2} color="#FFFFFF" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </CanvasNodeContext.Provider>

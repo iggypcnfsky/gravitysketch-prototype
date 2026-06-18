@@ -6,7 +6,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 
 const MOVE_KEYS = new Set(["w", "a", "s", "d", "q", "e"]);
-const MOVE_SPEED = 3.5;
+const MOVE_SPEED = 10.5;
 const SHIFT_SPEED_MULTIPLIER = 2;
 
 interface CameraKeyboardControlsProps {

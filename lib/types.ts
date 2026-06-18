@@ -1,9 +1,15 @@
 import type { Edge, Node } from "@xyflow/react";
-import type { ImageReferenceData, CanvasTextData, Position3D } from "./canvas-sync";
+import type {
+  CanvasSketchData,
+  CanvasTextData,
+  ImageReferenceData,
+  Position3D,
+  SketchStroke,
+} from "./canvas-sync";
 
-export type { ImageReferenceData, CanvasTextData, Position3D };
+export type { CanvasSketchData, ImageReferenceData, CanvasTextData, Position3D, SketchStroke };
 
-export type CanvasElementKind = "image" | "text";
+export type CanvasElementKind = "image" | "text" | "sketch";
 
 export interface CanvasElementReference {
   id: string;
@@ -15,6 +21,9 @@ export interface CanvasElementReference {
   fontSize?: number;
   scale?: number;
   rotation?: number;
+  width?: number;
+  height?: number;
+  strokes?: SketchStroke[];
 }
 
 /** @deprecated Use CanvasElementReference */

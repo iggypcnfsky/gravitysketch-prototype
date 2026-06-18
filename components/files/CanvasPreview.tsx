@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Node } from "@xyflow/react";
+import { pointsToPath } from "@/lib/canvas-sync";
 import { getCanvas } from "@/lib/store";
 import styles from "./CanvasPreview.module.css";
 
@@ -13,7 +14,21 @@ const NODE_SIZES: Record<string, { width: number; height: number }> = {
   imagePlaceholder: { width: 160, height: 120 },
   boatSketch: { width: 420, height: 260 },
   canvasText: { width: 120, height: 40 },
+  canvasSketch: { width: 120, height: 90 },
 };
+
+function getNodeSize(node: Node) {
+  if (node.type === "canvasSketch") {
+    const data = node.data as { width?: number; height?: number; scale?: number };
+    const scale = data.scale ?? 1;
+    return {
+      width: (data.width ?? 120) * scale,
+      height: (data.height ?? 90) * scale,
+    };
+  }
+
+  return NODE_SIZES[node.type ?? ""] ?? { width: 120, height: 90 };
+}
 
 interface CanvasPreviewProps {
   canvasId: string;
@@ -28,7 +43,7 @@ function getBounds(nodes: Node[]) {
   let maxY = -Infinity;
 
   for (const node of nodes) {
-    const size = NODE_SIZES[node.type ?? ""] ?? { width: 120, height: 90 };
+    const size = getNodeSize(node);
     minX = Math.min(minX, node.position.x);
     minY = Math.min(minY, node.position.y);
     maxX = Math.max(maxX, node.position.x + size.width);
@@ -89,8 +104,34 @@ function ImagePreview({ seed }: { seed: string }) {
   );
 }
 
+function SketchPreview({
+  width,
+  height,
+  strokes,
+}: {
+  width: number;
+  height: number;
+  strokes: Array<{ id: string; points: number[]; color: string; strokeWidth: number }>;
+}) {
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden>
+      {strokes.map((stroke) => (
+        <path
+          key={stroke.id}
+          d={pointsToPath(stroke.points)}
+          fill="none"
+          stroke={stroke.color}
+          strokeWidth={stroke.strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+    </svg>
+  );
+}
+
 function PreviewNode({ node }: { node: Node }) {
-  const size = NODE_SIZES[node.type ?? ""] ?? { width: 120, height: 90 };
+  const size = getNodeSize(node);
 
   return (
     <div
@@ -116,6 +157,12 @@ function PreviewNode({ node }: { node: Node }) {
         >
           {(node.data as { text?: string })?.text ?? "Text"}
         </div>
+      ) : node.type === "canvasSketch" ? (
+        <SketchPreview
+          width={(node.data as { width?: number })?.width ?? size.width}
+          height={(node.data as { height?: number })?.height ?? size.height}
+          strokes={(node.data as { strokes?: Array<{ id: string; points: number[]; color: string; strokeWidth: number }> })?.strokes ?? []}
+        />
       ) : null}
     </div>
   );

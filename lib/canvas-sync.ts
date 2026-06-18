@@ -19,7 +19,28 @@ export interface CanvasTextData {
   position3d?: Position3D;
 }
 
-export type CanvasElementData = ImageReferenceData | CanvasTextData;
+export interface SketchStroke {
+  id: string;
+  points: number[];
+  color: string;
+  strokeWidth: number;
+}
+
+export interface CanvasSketchData {
+  width?: number;
+  height?: number;
+  strokes?: SketchStroke[];
+  scale?: number;
+  rotation?: number;
+  position3d?: Position3D;
+}
+
+export type CanvasElementData = ImageReferenceData | CanvasTextData | CanvasSketchData;
+
+export const DEFAULT_SKETCH_STROKE_COLOR = "#7B3FF2";
+export const DEFAULT_SKETCH_STROKE_WIDTH = 2.5;
+export const SKETCH_BOUNDS_PADDING = 8;
+export const SKETCH_ERASER_RADIUS = 12;
 
 const CANVAS_ORIGIN = { x: 400, y: 300 };
 export const CANVAS_TO_WORLD_SCALE = 0.008;
@@ -67,10 +88,81 @@ export function getTextNodeSize(data: CanvasTextData) {
   return { width, height };
 }
 
+export function getSketchNodeSize(data: CanvasSketchData) {
+  const scale = data.scale ?? 1;
+  return {
+    width: Math.max((data.width ?? 1) * scale, 1),
+    height: Math.max((data.height ?? 1) * scale, 1),
+  };
+}
+
+export interface SketchBounds {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+}
+
+export function computeSketchBounds(strokes: SketchStroke[]): SketchBounds | null {
+  if (strokes.length === 0) return null;
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const stroke of strokes) {
+    const half = stroke.strokeWidth / 2;
+    for (let i = 0; i < stroke.points.length; i += 2) {
+      const x = stroke.points[i];
+      const y = stroke.points[i + 1];
+      minX = Math.min(minX, x - half);
+      minY = Math.min(minY, y - half);
+      maxX = Math.max(maxX, x + half);
+      maxY = Math.max(maxY, y + half);
+    }
+  }
+
+  if (!Number.isFinite(minX)) return null;
+
+  const paddedMinX = minX - SKETCH_BOUNDS_PADDING;
+  const paddedMinY = minY - SKETCH_BOUNDS_PADDING;
+  const paddedMaxX = maxX + SKETCH_BOUNDS_PADDING;
+  const paddedMaxY = maxY + SKETCH_BOUNDS_PADDING;
+
+  return {
+    minX: paddedMinX,
+    minY: paddedMinY,
+    width: Math.max(paddedMaxX - paddedMinX, 1),
+    height: Math.max(paddedMaxY - paddedMinY, 1),
+  };
+}
+
+export function flowStrokesToLocal(
+  strokes: SketchStroke[],
+  origin: { x: number; y: number },
+): SketchStroke[] {
+  return strokes.map((stroke) => ({
+    ...stroke,
+    points: stroke.points.map((value, index) =>
+      index % 2 === 0 ? value - origin.x : value - origin.y,
+    ),
+  }));
+}
+
+export function pointsToPath(points: number[]): string {
+  if (points.length < 2) return "";
+  let d = `M ${points[0]} ${points[1]}`;
+  for (let i = 2; i < points.length; i += 2) {
+    d += ` L ${points[i]} ${points[i + 1]}`;
+  }
+  return d;
+}
+
 export function getNodeCenter2D(
   nodeType: string | undefined,
   position: { x: number; y: number },
-  data: ImageReferenceData | CanvasTextData = {},
+  data: ImageReferenceData | CanvasTextData | CanvasSketchData = {},
 ) {
   if (nodeType === "imagePlaceholder") {
     const imageData = data as ImageReferenceData;
@@ -84,6 +176,15 @@ export function getNodeCenter2D(
   if (nodeType === "canvasText") {
     const textData = data as CanvasTextData;
     const size = getTextNodeSize(textData);
+    return {
+      x: position.x + size.width / 2,
+      y: position.y + size.height / 2,
+    };
+  }
+
+  if (nodeType === "canvasSketch") {
+    const sketchData = data as CanvasSketchData;
+    const size = getSketchNodeSize(sketchData);
     return {
       x: position.x + size.width / 2,
       y: position.y + size.height / 2,
@@ -96,7 +197,7 @@ export function getNodeCenter2D(
 export function centerToNodePosition(
   center: { x: number; y: number },
   nodeType: string | undefined,
-  data: ImageReferenceData | CanvasTextData = {},
+  data: ImageReferenceData | CanvasTextData | CanvasSketchData = {},
 ) {
   if (nodeType === "imagePlaceholder") {
     const imageData = data as ImageReferenceData;
@@ -116,13 +217,22 @@ export function centerToNodePosition(
     };
   }
 
+  if (nodeType === "canvasSketch") {
+    const sketchData = data as CanvasSketchData;
+    const size = getSketchNodeSize(sketchData);
+    return {
+      x: center.x - size.width / 2,
+      y: center.y - size.height / 2,
+    };
+  }
+
   return center;
 }
 
 export function nodePositionTo3D(
   nodeType: string | undefined,
   position: { x: number; y: number },
-  data: ImageReferenceData | CanvasTextData = {},
+  data: ImageReferenceData | CanvasTextData | CanvasSketchData = {},
   planeZ: number = DEFAULT_REFERENCE_Z,
 ): Position3D {
   const center = getNodeCenter2D(nodeType, position, data);
@@ -132,7 +242,7 @@ export function nodePositionTo3D(
 export function world3DToNodePosition(
   position3d: Position3D,
   nodeType: string | undefined,
-  data: ImageReferenceData | CanvasTextData = {},
+  data: ImageReferenceData | CanvasTextData | CanvasSketchData = {},
 ) {
   const center = canvas3DTo2D(position3d.x, position3d.y);
   return centerToNodePosition(center, nodeType, data);

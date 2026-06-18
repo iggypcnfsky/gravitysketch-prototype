@@ -29,6 +29,17 @@
   width: 48px;
 }
 
-.addBtn:hover {
-  background-color: #6a35db;
+.addBtnActive {
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgb(123 63 242 / 35%);
+}
+
+.addBtnActive:hover {
+  background-color: #f4f0ff;
+}
+
+.sketchToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

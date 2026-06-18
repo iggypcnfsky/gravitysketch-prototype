@@ -1,0 +1,31 @@
+.root {
+  position: relative;
+}
+
+.transformWrap {
+  height: calc(var(--sketch-height) * var(--sketch-scale));
+  transform: rotate(var(--sketch-rotation));
+  transform-origin: center center;
+  width: calc(var(--sketch-width) * var(--sketch-scale));
+}
+
+.sketchWrap {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  height: var(--sketch-height);
+  overflow: visible;
+  pointer-events: none;
+  width: var(--sketch-width);
+}
+
+.sketchWrapSelected {
+  border-color: rgb(123 63 242 / 45%);
+}
+
+.svg {
+  display: block;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  width: 100%;
+}
