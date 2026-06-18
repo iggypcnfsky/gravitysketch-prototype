@@ -30,7 +30,7 @@ import { OrientationCube } from "./OrientationCube";
 import { ProjectionCamera, type CameraProjection } from "./ProjectionCamera";
 import { SceneFrameController } from "./SceneFrameController";
 import {
-  bakeReferenceGroupTransform,
+  saveReferenceGroupTransform,
   getRoom,
   updateCanvasElementFrom3D,
   updateMockShapeTransform,
@@ -210,7 +210,7 @@ export function Scene({ roomId, linkedCanvasId, projection, transformingRef, onR
     }
 
     if (selection.kind === "referenceGroup") {
-      bakeReferenceGroupTransform(selection.object as THREE.Group, roomId);
+      saveReferenceGroupTransform(selection.object as THREE.Group, roomId);
       return;
     }
 

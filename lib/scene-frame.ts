@@ -1,66 +1,16 @@
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import {
-  CANVAS_TO_WORLD_SCALE,
   DEFAULT_REFERENCE_Z,
-  DEFAULT_TEXT_FONT_SIZE,
-  getImageNodeSize,
-  getTextNodeSize,
+  getReferenceElementHalfExtents,
 } from "./canvas-sync";
 import { getCanvasElementsForRoom, getRoom } from "./store";
 import type { CanvasElementReference, ObjectTransform } from "./types";
 
-const IMAGE_HALF_WIDTH = 0.45;
-const IMAGE_HALF_HEIGHT = 0.34;
 const CANVAS_GROUP_PADDING = 0.2;
 const BOAT_HALF_EXTENTS = { x: 1.35, y: 0.75, z: 1.1 };
 const VIEW_DIRECTION = new THREE.Vector3(0.9, 0.5, 1.05).normalize();
 const DEFAULT_FRAME_PADDING = 1.3;
-
-function getElementHalfExtents(element: CanvasElementReference) {
-  if (element.kind === "image") {
-    const scale = element.scale ?? 1;
-    return {
-      halfWidth: (IMAGE_HALF_WIDTH * 2 * scale) / 2,
-      halfHeight: (IMAGE_HALF_HEIGHT * 2 * scale) / 2,
-    };
-  }
-
-  if (element.kind === "sketch") {
-    const scale = element.scale ?? 1;
-    const width = (element.width ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
-    const height = (element.height ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
-    const rotation = ((element.rotation ?? 0) * Math.PI) / 180;
-
-    return {
-      halfWidth:
-        (Math.abs(Math.cos(rotation)) * width) / 2 +
-        (Math.abs(Math.sin(rotation)) * height) / 2,
-      halfHeight:
-        (Math.abs(Math.sin(rotation)) * width) / 2 +
-        (Math.abs(Math.cos(rotation)) * height) / 2,
-    };
-  }
-
-  const textSize = getTextNodeSize({
-    text: element.text,
-    fontSize: element.fontSize,
-    scale: element.scale,
-  });
-  const width = Math.max(textSize.width * CANVAS_TO_WORLD_SCALE, 0.35);
-  const height = Math.max(textSize.height * CANVAS_TO_WORLD_SCALE, 0.2);
-  const rotation = ((element.rotation ?? 0) * Math.PI) / 180;
-
-  return {
-    halfWidth:
-      (Math.abs(Math.cos(rotation)) * width) / 2 +
-      (Math.abs(Math.sin(rotation)) * height) / 2,
-    halfHeight:
-      (Math.abs(Math.sin(rotation)) * width) / 2 +
-      (Math.abs(Math.cos(rotation)) * height) / 2,
-  };
-}
-
 const MOCK_SHAPE_HALF_EXTENT = 0.55;
 
 function expandBoxForMockShape(box: THREE.Box3, transform?: ObjectTransform) {
@@ -92,8 +42,16 @@ function expandBoxForBoat(box: THREE.Box3, transform?: ObjectTransform) {
   );
 }
 
-function expandBoxForCanvasElements(box: THREE.Box3, elements: CanvasElementReference[]) {
+function expandBoxForCanvasElements(
+  box: THREE.Box3,
+  elements: CanvasElementReference[],
+  offset?: { x: number; y: number; z: number },
+) {
   if (elements.length === 0) return;
+
+  const dx = offset?.x ?? 0;
+  const dy = offset?.y ?? 0;
+  const dz = offset?.z ?? 0;
 
   let minX = Infinity;
   let maxX = -Infinity;
@@ -104,13 +62,13 @@ function expandBoxForCanvasElements(box: THREE.Box3, elements: CanvasElementRefe
 
   for (const element of elements) {
     const { x, y, z } = element.position3d;
-    const { halfWidth, halfHeight } = getElementHalfExtents(element);
-    minX = Math.min(minX, x - halfWidth);
-    maxX = Math.max(maxX, x + halfWidth);
-    minY = Math.min(minY, y - halfHeight);
-    maxY = Math.max(maxY, y + halfHeight);
-    minZ = Math.min(minZ, z);
-    maxZ = Math.max(maxZ, z);
+    const { halfWidth, halfHeight } = getReferenceElementHalfExtents(element);
+    minX = Math.min(minX, x + dx - halfWidth);
+    maxX = Math.max(maxX, x + dx + halfWidth);
+    minY = Math.min(minY, y + dy - halfHeight);
+    maxY = Math.max(maxY, y + dy + halfHeight);
+    minZ = Math.min(minZ, z + dz);
+    maxZ = Math.max(maxZ, z + dz);
   }
 
   minX -= CANVAS_GROUP_PADDING;
@@ -135,7 +93,7 @@ export function computeRoomSceneBounds(roomId: string): THREE.Box3 {
     expandBoxForMockShape(box, room.mockShapeTransform);
   }
 
-  expandBoxForCanvasElements(box, elements);
+  expandBoxForCanvasElements(box, elements, room?.referenceGroupOffset);
 
   if (box.isEmpty()) {
     box.setFromCenterAndSize(

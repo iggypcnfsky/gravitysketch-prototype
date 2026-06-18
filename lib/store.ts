@@ -6,6 +6,7 @@ import {
   canvasTo3D,
   DEFAULT_REFERENCE_Z,
   emitCanvasSync,
+  getReferenceElementHalfExtents,
   nodePositionTo3D,
   world3DToNodePosition,
   type CanvasTextData,
@@ -275,6 +276,18 @@ export function getCanvasElementsForRoom(roomId: string): CanvasElementReference
   const canvas = getCanvasByRoomId(roomId);
   if (!canvas) return [];
 
+  const resolvePosition3d = (
+    nodeType: string | undefined,
+    position: { x: number; y: number },
+    data: ImageReferenceData | CanvasTextData | CanvasSketchData,
+  ) =>
+    nodePositionTo3D(
+      nodeType,
+      position,
+      data,
+      data.position3d?.z ?? DEFAULT_REFERENCE_Z,
+    );
+
   return canvas.nodes
     .filter(
       (node) =>
@@ -293,9 +306,7 @@ export function getCanvasElementsForRoom(roomId: string): CanvasElementReference
           fontSize: data.fontSize ?? 28,
           scale: data.scale ?? 1,
           rotation: data.rotation ?? 0,
-          position3d:
-            data.position3d ??
-            nodePositionTo3D(node.type, node.position, data),
+          position3d: resolvePosition3d(node.type, node.position, data),
           canvasPosition: { x: node.position.x, y: node.position.y },
         };
       }
@@ -311,9 +322,7 @@ export function getCanvasElementsForRoom(roomId: string): CanvasElementReference
           strokes: data.strokes ?? [],
           scale: data.scale ?? 1,
           rotation: data.rotation ?? 0,
-          position3d:
-            data.position3d ??
-            nodePositionTo3D(node.type, node.position, data),
+          position3d: resolvePosition3d(node.type, node.position, data),
           canvasPosition: { x: node.position.x, y: node.position.y },
         };
       }
@@ -326,9 +335,7 @@ export function getCanvasElementsForRoom(roomId: string): CanvasElementReference
         seed: data.seed ?? node.id,
         scale: data.scale ?? 1,
         rotation: data.rotation ?? 0,
-        position3d:
-          data.position3d ??
-          nodePositionTo3D(node.type, node.position, data),
+        position3d: resolvePosition3d(node.type, node.position, data),
         canvasPosition: { x: node.position.x, y: node.position.y },
       };
     });
@@ -545,48 +552,60 @@ export function updateMockShapeTransform(roomId: string, transform: ObjectTransf
   writeState(state);
 }
 
-export function bakeReferenceGroupTransform(group: THREE.Group, roomId: string): void {
-  group.updateMatrixWorld(true);
+function computeReferenceGroupBoundsCenter(
+  elements: CanvasElementReference[],
+): Position3D | null {
+  if (elements.length === 0) return null;
 
-  const baked: Array<{
-    child: THREE.Object3D;
-    worldPosition: THREE.Vector3;
-    rotationZ: number;
-    scale: number;
-  }> = [];
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
 
-  group.children.forEach((child) => {
-    const elementId = (child.userData.elementId ?? child.userData.referenceId) as
-      | string
-      | undefined;
-    if (!elementId) return;
+  for (const element of elements) {
+    const { x, y } = element.position3d;
+    const { halfWidth, halfHeight } = getReferenceElementHalfExtents(element);
+    minX = Math.min(minX, x - halfWidth);
+    maxX = Math.max(maxX, x + halfWidth);
+    minY = Math.min(minY, y - halfHeight);
+    maxY = Math.max(maxY, y + halfHeight);
+  }
 
-    const worldPosition = new THREE.Vector3();
-    child.getWorldPosition(worldPosition);
-    const rotationZ = child.rotation.z;
-    const scale = child.scale.x;
+  const planeZ = elements[0]?.position3d.z ?? DEFAULT_REFERENCE_Z;
 
-    baked.push({ child, worldPosition, rotationZ, scale });
-    updateCanvasElementFrom3D(roomId, elementId, {
-      position3d: {
-        x: worldPosition.x,
-        y: worldPosition.y,
-        z: worldPosition.z,
-      },
-      rotation: THREE.MathUtils.radToDeg(rotationZ),
-      scale,
-    });
-  });
+  return {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2,
+    z: planeZ,
+  };
+}
 
-  group.position.set(0, 0, 0);
-  group.rotation.set(0, 0, 0);
-  group.scale.set(1, 1, 1);
+export function getReferenceGroupOffset(roomId: string): Position3D {
+  const room = getRoom(roomId);
+  return room?.referenceGroupOffset ?? { x: 0, y: 0, z: 0 };
+}
 
-  baked.forEach(({ child, worldPosition, rotationZ, scale }) => {
-    child.position.copy(worldPosition);
-    child.rotation.set(0, 0, rotationZ);
-    child.scale.set(scale, scale, 1);
-  });
+/** Persist where the reference canvas sits in 3D without changing 2D canvas layout. */
+export function saveReferenceGroupTransform(group: THREE.Group, roomId: string): void {
+  const elements = getCanvasElementsForRoom(roomId);
+  const center = computeReferenceGroupBoundsCenter(elements);
+  if (!center) return;
+
+  const offset: Position3D = {
+    x: group.position.x - center.x,
+    y: group.position.y - center.y,
+    z: group.position.z - center.z,
+  };
+
+  const state = readState();
+  const index = state.rooms.findIndex((room) => room.id === roomId);
+  if (index < 0) return;
+
+  state.rooms[index] = {
+    ...state.rooms[index],
+    referenceGroupOffset: offset,
+  };
+  writeState(state);
 }
 
 export function createRoom(name: string): Room {
@@ -635,7 +654,10 @@ export function createCanvas(name: string): CanvasDocument {
         id: `image-${Date.now()}`,
         type: "imagePlaceholder",
         position,
-        data: { seed, position3d: canvasTo3D(position.x, position.y) },
+        data: {
+          seed,
+          position3d: nodePositionTo3D("imagePlaceholder", position, { seed }),
+        },
         draggable: true,
         selectable: true,
       },

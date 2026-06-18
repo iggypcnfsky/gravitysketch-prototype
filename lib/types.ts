@@ -69,6 +69,8 @@ export interface Room {
   modelTransforms?: Partial<Record<RoomModelId, ObjectTransform>>;
   mockShape?: MockShapeId;
   mockShapeTransform?: ObjectTransform;
+  /** World-space offset of the reference canvas group from its content bounds center. */
+  referenceGroupOffset?: Position3D;
 }
 
 export interface ScreenshotFile {

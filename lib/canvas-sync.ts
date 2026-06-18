@@ -75,6 +75,9 @@ export function canvas3DTo2D(worldX: number, worldY: number): { x: number; y: nu
 export const DEFAULT_TEXT_FONT_SIZE = 28;
 export const IMAGE_NODE_WIDTH = 160;
 export const IMAGE_NODE_HEIGHT = 120;
+export const REFERENCE_IMAGE_WIDTH = IMAGE_NODE_WIDTH * CANVAS_TO_WORLD_SCALE;
+export const REFERENCE_IMAGE_HEIGHT = IMAGE_NODE_HEIGHT * CANVAS_TO_WORLD_SCALE;
+export const REFERENCE_IMAGE_CORNER_RADIUS = 8 * CANVAS_TO_WORLD_SCALE;
 export const INTER_FONT_URL =
   "https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.5/files/inter-latin-400-normal.woff";
 
@@ -252,6 +255,60 @@ export function world3DToNodePosition(
 ) {
   const center = canvas3DTo2D(position3d.x, position3d.y);
   return centerToNodePosition(center, nodeType, data);
+}
+
+export type ReferenceElementLike = {
+  kind: "image" | "text" | "sketch";
+  scale?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+  text?: string;
+  fontSize?: number;
+};
+
+export function getReferenceElementHalfExtents(element: ReferenceElementLike) {
+  if (element.kind === "image") {
+    const scale = element.scale ?? 1;
+    return {
+      halfWidth: (REFERENCE_IMAGE_WIDTH * scale) / 2,
+      halfHeight: (REFERENCE_IMAGE_HEIGHT * scale) / 2,
+    };
+  }
+
+  if (element.kind === "sketch") {
+    const scale = element.scale ?? 1;
+    const width = (element.width ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
+    const height = (element.height ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
+    const rotation = ((element.rotation ?? 0) * Math.PI) / 180;
+
+    return {
+      halfWidth:
+        (Math.abs(Math.cos(rotation)) * width) / 2 +
+        (Math.abs(Math.sin(rotation)) * height) / 2,
+      halfHeight:
+        (Math.abs(Math.sin(rotation)) * width) / 2 +
+        (Math.abs(Math.cos(rotation)) * height) / 2,
+    };
+  }
+
+  const textSize = getTextNodeSize({
+    text: element.text,
+    fontSize: element.fontSize,
+    scale: element.scale,
+  });
+  const width = Math.max(textSize.width * CANVAS_TO_WORLD_SCALE, 0.35);
+  const height = Math.max(textSize.height * CANVAS_TO_WORLD_SCALE, 0.2);
+  const rotation = ((element.rotation ?? 0) * Math.PI) / 180;
+
+  return {
+    halfWidth:
+      (Math.abs(Math.cos(rotation)) * width) / 2 +
+      (Math.abs(Math.sin(rotation)) * height) / 2,
+    halfHeight:
+      (Math.abs(Math.sin(rotation)) * width) / 2 +
+      (Math.abs(Math.cos(rotation)) * height) / 2,
+  };
 }
 
 export const CANVAS_SYNC_EVENT = "gs-canvas-sync";

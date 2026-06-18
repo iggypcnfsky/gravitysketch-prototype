@@ -8,6 +8,7 @@ import { CANVAS_SYNC_EVENT } from "@/lib/canvas-sync";
 import { CameraProjectionToggle } from "./CameraProjectionToggle";
 import type { CameraProjection } from "./ProjectionCamera";
 import { EditorToolbar } from "./EditorToolbar";
+import { CanvasGroupMoveHandleProvider } from "./CanvasGroupMoveHandle";
 import { Scene } from "./Scene";
 import styles from "./EditorViewport.module.css";
 
@@ -116,6 +117,7 @@ export function EditorViewport({ roomId, roomName }: EditorViewportProps) {
         className={`${styles.workspace} ${splitCanvas ? styles.workspaceSplit : ""} ${isResizing ? styles.workspaceResizing : ""}`}
       >
         <div className={styles.threePane}>
+          <CanvasGroupMoveHandleProvider>
           <div className={styles.canvas3d}>
             <Canvas
               camera={{ position: [4, 2.5, 5], fov: 45, near: 0.01, far: 2000 }}
@@ -150,6 +152,7 @@ export function EditorViewport({ roomId, roomName }: EditorViewportProps) {
               <CameraProjectionToggle value={projection} onChange={setProjection} />
             </div>
           </div>
+          </CanvasGroupMoveHandleProvider>
         </div>
 
         {splitCanvas ? (

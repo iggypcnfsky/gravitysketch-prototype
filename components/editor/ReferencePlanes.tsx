@@ -9,16 +9,17 @@ import {
   CANVAS_TO_WORLD_SCALE,
   CANVAS_SYNC_EVENT,
   DEFAULT_TEXT_FONT_SIZE,
+  getReferenceElementHalfExtents,
   getTextNodeSize,
   INTER_FONT_URL,
+  REFERENCE_IMAGE_CORNER_RADIUS,
+  REFERENCE_IMAGE_HEIGHT,
+  REFERENCE_IMAGE_WIDTH,
 } from "@/lib/canvas-sync";
 import { createRoundedRectOutline, createRoundedRectShape } from "@/lib/rounded-rect";
-import { getCanvasByRoomId, getCanvasElementsForRoom } from "@/lib/store";
+import { getCanvasByRoomId, getCanvasElementsForRoom, getReferenceGroupOffset } from "@/lib/store";
 import { CanvasGroupMoveHandle } from "./CanvasGroupMoveHandle";
 
-const PLANE_WIDTH = 0.9;
-const PLANE_HEIGHT = 0.68;
-const CORNER_RADIUS = 0.08;
 const GROUP_PADDING = 0.2;
 const CANVAS_BG = "#eeeeee";
 const CANVAS_FRAME_RADIUS = 0.12;
@@ -31,46 +32,7 @@ export interface SceneSelection {
 }
 
 function getElementHalfExtents(element: CanvasElementReference) {
-  if (element.kind === "image") {
-    const scale = element.scale ?? 1;
-    return {
-      halfWidth: (PLANE_WIDTH * scale) / 2,
-      halfHeight: (PLANE_HEIGHT * scale) / 2,
-    };
-  }
-
-  if (element.kind === "sketch") {
-    const scale = element.scale ?? 1;
-    const width = (element.width ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
-    const height = (element.height ?? 1) * CANVAS_TO_WORLD_SCALE * scale;
-    const rotation = ((element.rotation ?? 0) * Math.PI) / 180;
-
-    return {
-      halfWidth:
-        (Math.abs(Math.cos(rotation)) * width) / 2 +
-        (Math.abs(Math.sin(rotation)) * height) / 2,
-      halfHeight:
-        (Math.abs(Math.sin(rotation)) * width) / 2 +
-        (Math.abs(Math.cos(rotation)) * height) / 2,
-    };
-  }
-
-  const fontSize =
-    (element.fontSize ?? DEFAULT_TEXT_FONT_SIZE) *
-    (element.scale ?? 1) *
-    CANVAS_TO_WORLD_SCALE;
-  const label = element.text ?? "Text";
-  const width = Math.max(label.length * fontSize * 0.55, 0.35);
-  const height = Math.max(fontSize * 1.35, 0.2);
-  const rotation = ((element.rotation ?? 0) * Math.PI) / 180;
-  const halfWidth =
-    (Math.abs(Math.cos(rotation)) * width) / 2 +
-    (Math.abs(Math.sin(rotation)) * height) / 2;
-  const halfHeight =
-    (Math.abs(Math.sin(rotation)) * width) / 2 +
-    (Math.abs(Math.cos(rotation)) * height) / 2;
-
-  return { halfWidth, halfHeight };
+  return getReferenceElementHalfExtents(element);
 }
 
 function disableImageDepthWrite(mesh: THREE.Mesh) {
@@ -143,9 +105,9 @@ function ImageElementPlane({
       {isSelected ? (
         <Image
           url={`https://picsum.photos/seed/${seed}/640/480`}
-          scale={[PLANE_WIDTH * 1.05, PLANE_HEIGHT * 1.05]}
+          scale={[REFERENCE_IMAGE_WIDTH * 1.05, REFERENCE_IMAGE_HEIGHT * 1.05]}
           position={[0, 0, -0.003]}
-          radius={CORNER_RADIUS * 1.05}
+          radius={REFERENCE_IMAGE_CORNER_RADIUS * 1.05}
           color="#7B3FF2"
           opacity={0.32}
           transparent
@@ -157,8 +119,8 @@ function ImageElementPlane({
       ) : null}
       <Image
         url={`https://picsum.photos/seed/${seed}/640/480`}
-        scale={[PLANE_WIDTH, PLANE_HEIGHT]}
-        radius={CORNER_RADIUS}
+        scale={[REFERENCE_IMAGE_WIDTH, REFERENCE_IMAGE_HEIGHT]}
+        radius={REFERENCE_IMAGE_CORNER_RADIUS}
         opacity={1}
         transparent
         toneMapped={false}
@@ -460,9 +422,14 @@ export function ReferencePlanes({
 
   useLayoutEffect(() => {
     if (!groupRef.current || !bounds || transformingRef.current) return;
-    groupRef.current.position.copy(bounds.center);
+    const offset = getReferenceGroupOffset(roomId);
+    groupRef.current.position.set(
+      bounds.center.x + offset.x,
+      bounds.center.y + offset.y,
+      bounds.center.z + offset.z,
+    );
     groupRef.current.rotation.set(0, 0, 0);
-  }, [bounds, transformingRef]);
+  }, [bounds, roomId, transformingRef]);
 
   const handleGroupPointerDown = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();

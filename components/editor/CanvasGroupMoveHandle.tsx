@@ -1,13 +1,85 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Move } from "lucide-react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
-import { bakeReferenceGroupTransform } from "@/lib/store";
+import { saveReferenceGroupTransform } from "@/lib/store";
 import styles from "./ReferencePlanes.module.css";
+
+interface MoveHandleRegistration {
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
+  onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => void;
+  portalTarget: HTMLElement | null;
+}
+
+interface MoveHandleOverlayContextValue {
+  register: (registration: MoveHandleRegistration) => void;
+  unregister: () => void;
+}
+
+const MoveHandleOverlayContext = createContext<MoveHandleOverlayContextValue | null>(
+  null,
+);
+
+export function CanvasGroupMoveHandleProvider({ children }: { children: ReactNode }) {
+  const [registration, setRegistration] = useState<MoveHandleRegistration | null>(
+    null,
+  );
+
+  const register = useCallback((next: MoveHandleRegistration) => {
+    setRegistration(next);
+  }, []);
+
+  const unregister = useCallback(() => {
+    setRegistration(null);
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ register, unregister }),
+    [register, unregister],
+  );
+
+  return (
+    <MoveHandleOverlayContext.Provider value={contextValue}>
+      {children}
+      {registration?.portalTarget
+        ? createPortal(
+            <button
+              ref={registration.buttonRef}
+              type="button"
+              className={styles.moveHandle}
+              style={{
+                display: "none",
+                left: 0,
+                position: "fixed",
+                top: 0,
+                transform: "translate(-50%, -50%)",
+                zIndex: 120,
+              }}
+              onPointerDown={registration.onPointerDown}
+              aria-label="Drag to move canvas"
+            >
+              <Move size={14} strokeWidth={2} />
+              <span className={styles.moveHandleLabel}>Move canvas</span>
+            </button>,
+            registration.portalTarget,
+          )
+        : null}
+    </MoveHandleOverlayContext.Provider>
+  );
+}
 
 interface CanvasGroupMoveHandleProps {
   frameHeight: number;
@@ -24,9 +96,10 @@ export function CanvasGroupMoveHandle({
   roomId,
   transformingRef,
 }: CanvasGroupMoveHandleProps) {
+  const overlay = useContext(MoveHandleOverlayContext);
   const { camera, gl, controls } = useThree();
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const handleLocalPosition = useMemo(
     () => new THREE.Vector3(0, frameHeight / 2 + 0.16, 0.05),
     [frameHeight],
@@ -107,7 +180,7 @@ export function CanvasGroupMoveHandle({
         transformingRef.current = false;
         if (orbitControls) orbitControls.enabled = true;
         if (groupRef.current) {
-          bakeReferenceGroupTransform(groupRef.current, roomId);
+          saveReferenceGroupTransform(groupRef.current, roomId);
         }
         document.body.style.cursor = "";
         window.removeEventListener("pointermove", onMove);
@@ -121,27 +194,17 @@ export function CanvasGroupMoveHandle({
     [controls, getPlaneHit, groupRef, roomId, transformingRef],
   );
 
-  if (!portalTarget) return null;
+  useEffect(() => {
+    if (!overlay || !portalTarget) return;
 
-  return createPortal(
-    <button
-      ref={buttonRef}
-      type="button"
-      className={styles.moveHandle}
-      style={{
-        display: "none",
-        left: 0,
-        position: "fixed",
-        top: 0,
-        transform: "translate(-50%, -50%)",
-        zIndex: 120,
-      }}
-      onPointerDown={handlePointerDown}
-      aria-label="Drag to move canvas"
-    >
-      <Move size={14} strokeWidth={2} />
-      <span className={styles.moveHandleLabel}>Move canvas</span>
-    </button>,
-    portalTarget,
-  );
+    overlay.register({
+      buttonRef,
+      onPointerDown: handlePointerDown,
+      portalTarget,
+    });
+
+    return () => overlay.unregister();
+  }, [handlePointerDown, overlay, portalTarget]);
+
+  return null;
 }
