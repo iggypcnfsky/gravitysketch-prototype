@@ -1,0 +1,35 @@
+.root {
+  position: relative;
+}
+
+.transformWrap {
+  display: inline-block;
+  transform: rotate(var(--text-rotation, 0deg)) scale(var(--text-scale, 1));
+  transform-origin: center center;
+}
+
+.body {
+  color: var(--gs-text-primary);
+  cursor: grab;
+  font-family: var(--gs-font);
+  font-size: var(--text-font-size, 28px);
+  font-weight: 500;
+  line-height: 1.2;
+  max-width: 320px;
+  outline: none;
+  padding: 4px 6px;
+  user-select: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bodySelected {
+  box-shadow: 0 0 0 2px rgb(123 63 242 / 35%);
+  outline: 2px solid var(--gs-purple);
+  outline-offset: 2px;
+}
+
+.bodyEditing {
+  cursor: text;
+  user-select: text;
+}

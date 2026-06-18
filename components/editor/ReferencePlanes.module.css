@@ -1,0 +1,26 @@
+.moveHandle {
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid rgb(123 63 242 / 35%);
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 14%);
+  color: #7b3ff2;
+  cursor: grab;
+  display: flex;
+  gap: 6px;
+  padding: 6px 12px;
+  touch-action: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.moveHandle:active {
+  cursor: grabbing;
+}
+
+.moveHandleLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}

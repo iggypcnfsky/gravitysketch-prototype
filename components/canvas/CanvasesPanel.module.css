@@ -1,0 +1,94 @@
+.panel {
+  background-color: var(--gs-card-bg);
+  border-radius: var(--gs-radius-xl);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  overflow: clip;
+  width: 100%;
+  min-height: 0;
+}
+
+.inner {
+  border-radius: 133px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.toolbar {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.title {
+  color: var(--gs-text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.newCanvasBtn {
+  align-items: center;
+  background-color: var(--gs-orange);
+  border-radius: var(--gs-radius-pill);
+  display: flex;
+  height: 36px;
+  padding-inline: 20px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.filters {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.filterGroup {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.filterLabel {
+  color: var(--gs-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.filterLabelMuted {
+  color: var(--gs-text-subtle);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.sortGroup {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}

@@ -1,0 +1,212 @@
+.viewport {
+  background-color: var(--gs-editor-container);
+  background-image: linear-gradient(
+    in oklab 180deg,
+    var(--gs-editor-gradient-start) 0%,
+    var(--gs-editor-gradient-end) 100%
+  );
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.workspaceSplit {
+  gap: 0;
+}
+
+.threePane {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+
+.workspaceSplit .threePane {
+  flex: 1 1 auto;
+  min-width: 280px;
+}
+
+.canvas3d {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.canvasPane {
+  background-color: var(--gs-canvas-bg);
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 280px;
+  overflow: hidden;
+  position: relative;
+}
+
+.resizeHandle {
+  background-color: transparent;
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  touch-action: none;
+  width: 8px;
+  z-index: 4;
+}
+
+.resizeHandle::after {
+  background-color: var(--gs-border);
+  content: "";
+  inset: 0;
+  position: absolute;
+  transition: background-color 0.15s ease;
+  width: 1px;
+}
+
+.resizeHandle:hover::after,
+.resizeHandleActive::after {
+  background-color: var(--gs-purple);
+  width: 2px;
+}
+
+.workspaceResizing {
+  cursor: col-resize;
+}
+
+.canvasPaneEmpty {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.canvasPaneEmptyTitle {
+  color: var(--gs-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.canvasPaneEmptyText {
+  color: var(--gs-text-subtle);
+  font-size: 14px;
+  line-height: 20px;
+  max-width: 240px;
+}
+
+.overlays {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.overlays > * {
+  pointer-events: auto;
+}
+
+.collaborator {
+  position: absolute;
+  height: 50px;
+  width: 40px;
+}
+
+.collaboratorLeft {
+  left: 38%;
+  top: 42%;
+}
+
+.collaboratorRight {
+  left: 58%;
+  top: 42%;
+}
+
+.collaboratorLabel {
+  font-family: var(--gs-font);
+  font-size: 14px;
+  font-weight: 600;
+  fill: #ffffff;
+}
+
+.collaboratorBody {
+  opacity: 0.9;
+}
+
+.bottomLeft {
+  align-items: flex-start;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  left: 20px;
+  position: absolute;
+}
+
+.viewpointPill {
+  align-items: center;
+  backdrop-filter: blur(8px);
+  background-color: var(--gs-viewpoint-pill);
+  border-radius: var(--gs-radius-pill);
+  bottom: 24px;
+  display: flex;
+  height: 44px;
+  justify-content: center;
+  left: 50%;
+  padding-inline: 36px;
+  position: absolute;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.renderBar {
+  align-items: center;
+  background-color: var(--gs-render-bar);
+  border-radius: var(--gs-radius-pill);
+  display: flex;
+  height: 40px;
+  padding: 4px;
+}
+
+.renderInactive {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--gs-radius-pill);
+  cursor: pointer;
+  display: flex;
+  flex-shrink: 0;
+  height: 32px;
+  justify-content: center;
+  width: 40px;
+}
+
+.renderActive {
+  align-items: center;
+  background-color: var(--gs-purple);
+  border: none;
+  border-radius: var(--gs-radius-pill);
+  cursor: pointer;
+  display: flex;
+  flex-shrink: 0;
+  height: 32px;
+  justify-content: center;
+  width: 40px;
+}

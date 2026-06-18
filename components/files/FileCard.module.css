@@ -1,0 +1,102 @@
+.card {
+  background-color: var(--gs-card-bg);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-radius-lg);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  text-align: left;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  width: 200px;
+}
+
+.card:not(.cardDisabled):hover {
+  border-color: rgb(0 0 0 / 10%);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 8%);
+  transform: translateY(-3px);
+}
+
+.thumbnail {
+  align-items: center;
+  background-color: var(--gs-thumb-bg);
+  display: flex;
+  flex-shrink: 0;
+  height: 150px;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.canvasThumb {
+  background-color: var(--gs-canvas-bg);
+}
+
+.screenshotThumb {
+  background-color: var(--gs-thumb-bg);
+}
+
+.screenshotImg {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.cardDisabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.name {
+  color: var(--gs-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+  padding: 12px 12px 0;
+  text-align: left;
+}
+
+.meta {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px 12px;
+}
+
+.badge {
+  align-items: center;
+  border-radius: var(--gs-radius-pill);
+  display: flex;
+  height: 20px;
+  justify-content: center;
+  padding-inline: 8px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 12px;
+}
+
+.badgeRoom {
+  background-color: var(--gs-purple);
+}
+
+.badgeCanvas {
+  background-color: var(--gs-orange);
+}
+
+.badgeScreenshot {
+  background-color: #3b82f6;
+}
+
+.timestamp {
+  color: var(--gs-text-timestamp);
+  font-size: 12px;
+  line-height: 16px;
+}

@@ -1,0 +1,64 @@
+.root {
+  background-color: var(--gs-canvas-bg);
+  background-image: radial-gradient(circle, #d4d4d4 1px, transparent 1px);
+  background-size: 16px 16px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.content {
+  height: 150px;
+  position: absolute;
+  transform-origin: top left;
+  width: 200px;
+}
+
+.previewNode {
+  position: absolute;
+}
+
+.imageNode {
+  background-color: var(--gs-thumb-bg);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-radius-sm);
+  box-sizing: border-box;
+  height: 120px;
+  overflow: hidden;
+  width: 160px;
+}
+
+.imageNodeImg {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.textNode {
+  color: var(--gs-text-primary);
+  font-family: var(--gs-font);
+  font-weight: 500;
+  line-height: 1.2;
+  transform-origin: center center;
+  white-space: nowrap;
+}
+
+.empty {
+  align-items: center;
+  background-color: var(--gs-canvas-bg);
+  background-image: radial-gradient(circle, #d4d4d4 1px, transparent 1px);
+  background-size: 16px 16px;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+
+.emptyCurve {
+  border: 2px solid rgb(123 63 242 / 50%);
+  border-radius: 50%;
+  height: 60px;
+  width: 120px;
+}

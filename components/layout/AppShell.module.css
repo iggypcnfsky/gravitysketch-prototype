@@ -1,0 +1,59 @@
+.shell {
+  --sidebar-edge: var(--gs-sidebar-width);
+  background-color: var(--gs-page-bg);
+  display: flex;
+  height: 100vh;
+  min-height: 900px;
+  overflow: hidden;
+  position: relative;
+}
+
+.shellCollapsed {
+  --sidebar-edge: 64px;
+}
+
+.collapseBtn {
+  align-items: center;
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--gs-text-subtle);
+  cursor: pointer;
+  display: flex;
+  height: 24px;
+  justify-content: center;
+  left: var(--sidebar-edge);
+  padding: 0;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: left 0.2s ease, color 0.15s ease;
+  width: 24px;
+  z-index: 30;
+}
+
+.collapseBtn:hover {
+  color: var(--gs-text-secondary);
+}
+
+.collapseBtn svg {
+  flex-shrink: 0;
+}
+
+.main {
+  background-color: var(--gs-page-bg);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: clip;
+}
+
+.content {
+  background-color: var(--gs-page-bg);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 10px 16px 16px 10px;
+  min-height: 0;
+}

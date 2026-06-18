@@ -1,0 +1,9 @@
+.shell {
+  background-color: var(--gs-editor-container);
+  display: flex;
+  flex-direction: column;
+  font-synthesis: none;
+  height: 100vh;
+  overflow: hidden;
+  width: 100%;
+}

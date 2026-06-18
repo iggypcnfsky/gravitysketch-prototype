@@ -1,0 +1,39 @@
+.root {
+  position: relative;
+}
+
+.transformWrap {
+  height: calc(var(--image-height, 120px) * var(--image-scale, 1));
+  transform: rotate(var(--image-rotation, 0deg));
+  transform-origin: center center;
+  width: calc(var(--image-width, 160px) * var(--image-scale, 1));
+}
+
+.node {
+  height: 100%;
+  width: 100%;
+}
+
+.imageWrap {
+  background-color: var(--gs-thumb-bg);
+  border: 2px solid var(--gs-border);
+  border-radius: var(--gs-radius-sm);
+  box-sizing: border-box;
+  height: 100%;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.imageWrapSelected {
+  border-color: var(--gs-purple);
+  box-shadow: 0 0 0 3px rgb(123 63 242 / 25%);
+}
+
+.image {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  width: 100%;
+}

@@ -1,0 +1,137 @@
+.overlay {
+  align-items: center;
+  background-color: rgb(0 0 0 / 40%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  position: fixed;
+  z-index: 100;
+}
+
+.modal {
+  background-color: var(--gs-card-bg);
+  border-radius: var(--gs-radius-xl);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 12%);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 80vh;
+  padding: 24px;
+  width: 400px;
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.title {
+  color: var(--gs-text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.closeBtn {
+  align-items: center;
+  border-radius: var(--gs-radius-sm);
+  color: var(--gs-text-subtle);
+  display: flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.subtitle {
+  color: var(--gs-text-subtle);
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.roomList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.roomItem {
+  align-items: center;
+  background-color: var(--gs-page-bg);
+  border: 1px solid var(--gs-border-subtle);
+  border-radius: var(--gs-radius-sm);
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.roomItem:hover {
+  border-color: var(--gs-purple);
+}
+
+.roomItemActive {
+  border-color: var(--gs-purple);
+  box-shadow: 0 0 0 2px rgb(123 63 242 / 20%);
+}
+
+.roomIcon {
+  align-items: center;
+  background-color: var(--gs-thumb-bg);
+  border-radius: var(--gs-radius-sm);
+  display: flex;
+  flex-shrink: 0;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.roomName {
+  color: var(--gs-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.roomMeta {
+  color: var(--gs-text-timestamp);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.unlinkBtn {
+  align-items: center;
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-radius-pill);
+  color: var(--gs-text-muted);
+  display: flex;
+  height: 36px;
+  padding-inline: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.linkBtn {
+  align-items: center;
+  background-color: var(--gs-purple);
+  border-radius: var(--gs-radius-pill);
+  color: #ffffff;
+  display: flex;
+  height: 36px;
+  padding-inline: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.linkBtn:disabled {
+  opacity: 0.5;
+}
